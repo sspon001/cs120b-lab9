@@ -81,7 +81,7 @@ disableJTAG:
 	@rm -f $(HTXT)
 
 program: $(PATHB)main.hex
-	$(PROGRAM) -c $(PROGRAMMER) -p $(MMCU) $(VERBOSITY) -U $(MEMORY):w:$< || $(ADDVERBOSITY)
+	$(PROGRAM) -c $(PROGRAMMER) -p $(MMCU) $(VERBOSITY) -U $(MEMORY):w:$<
 
 debug: $(PATHO)main.elf
 	@sed -i "s/break main.c:.*/break main.c:$(WHILELINENO)/" $(INITDEBUGGER)
