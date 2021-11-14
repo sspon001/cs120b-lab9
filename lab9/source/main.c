@@ -13,8 +13,10 @@
 #include "simAVRHeader.h"
 #endif
 
-double temp = 0 ;
-enum states {start, init, c, d, e} state ;
+enum states {start, init, inc, dec, toggle, release} state ;
+double scale[8] = {261.63, 293.66, 329.63, 349.23, 392.00, 440.00, 493.88, 523.25} ;
+unsigned char a = 0x00 ;
+unsigned char temp = 0x00 ;
 
 volatile unsigned char TimerFlag = 0 ;
 unsigned long _avr_timer_M = 1 ;
@@ -68,45 +70,61 @@ void PWM_off() {
 
 void Tick() {
 	switch(state) {
-		case start:	state = init ; 
+		case start:	
+				state = init ; 
 				break ;
 		
-		case init:	if ((~PINA & 0x07) == 0x01) state = c  ;
-				else if ((~PINA & 0x07) == 0x02) state = d ;
-				else if ((~PINA & 0x07) == 0x04) state = e ;
+		case init:
+				if ((~PINA & 0x07) == 0x01) state = inc  ;
+				else if ((~PINA & 0x07) == 0x02) state = toggle ;
+				else if ((~PINA & 0x07) == 0x04) state = dec ;
 				else state = init ;
 				break ;
 
-		case c:	if ((~PINA & 0x07) == 0x01) state = c ;
-				else state = init ;
+		case inc:	
+				state = release ;
 				break ;
 
-		case d:	if ((~PINA & 0x07) == 0x02) state = d ;
-                                else state = init ;
+		case toggle:	
+				state = release ;
                                 break ;
 
-		case e:	if ((~PINA & 0x07) == 0x04) state = e ;
-                                else state = init ;
+		case dec:	
+				state = release ;
                                 break ;
-
-		default:	state = start ; 
+		case release:
+				if((~PINA & 0x07) == 0x00) state = init ;
+				else state = release ;
+				break ;
+		default:	
+				state = start ; 
 				break ;
 	}
 	switch (state) {
 		case start:     
 				break ;
 		case init:	
-				set_PWM(0) ; 
 				break ;
-		case c:	
-				set_PWM(261.63) ; 
+		case inc:		
+				if(temp < 0x07) temp++ ;
+				if(a == 0x01) set_PWM(scale[temp]) ;
 				break ;
-		case d:	
-				set_PWM(293.66) ; 
+		case toggle:	
+				if(a == 0x00){
+					a = 0x01 ;
+					set_PWM(scale[temp]) ;
+				}
+				else{
+					a = 0x00 ;
+					set_PWM(0) ;
+				}
 				break ;
-		case e:	
-				set_PWM(329.63) ; 
+		case dec:	
+				if(temp > 0x00) temp-- ;
+				if(a == 0x01) set_PWM(scale[temp]) ;
 				break ;
+		case release:
+				break ;	
                 default:        
 				break ;
 	}
