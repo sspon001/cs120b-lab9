@@ -13,10 +13,9 @@
 #include "simAVRHeader.h"
 #endif
 
-enum states {start, init, inc, dec, toggle, release} state ;
+enum states {start, init, toggle, release} state ;
 double scale[8] = {261.63, 293.66, 329.63, 349.23, 392.00, 440.00, 493.88, 523.25} ;
-unsigned char a = 0x00 ;
-unsigned char temp = 0x00 ;
+int i = 0 ;
 
 volatile unsigned char TimerFlag = 0 ;
 unsigned long _avr_timer_M = 1 ;
@@ -75,25 +74,15 @@ void Tick() {
 				break ;
 		
 		case init:
-				if ((~PINA & 0x07) == 0x01) state = inc  ;
-				else if ((~PINA & 0x07) == 0x02) state = toggle ;
-				else if ((~PINA & 0x07) == 0x04) state = dec ;
+				if ((~PINA & 0x01) == 0x01) state = toggle  ;
 				else state = init ;
 				break ;
-
-		case inc:	
-				state = release ;
-				break ;
-
 		case toggle:	
-				state = release ;
-                                break ;
-
-		case dec:	
-				state = release ;
+				if(i >= 50) state = release ;
+				else state = toggle ;
                                 break ;
 		case release:
-				if((~PINA & 0x07) == 0x00) state = init ;
+				if((~PINA & 0x01) == 0x00) state = init ;
 				else state = release ;
 				break ;
 		default:	
@@ -103,27 +92,29 @@ void Tick() {
 	switch (state) {
 		case start:     
 				break ;
-		case init:	
+		case init:
+				set_PWM(0) ;
+				i = 0 ;	
 				break ;
-		case inc:		
-				if(temp < 0x07) temp++ ;
-				if(a == 0x01) set_PWM(scale[temp]) ;
-				break ;
-		case toggle:	
-				if(a == 0x00){
-					a = 0x01 ;
-					set_PWM(scale[temp]) ;
-				}
-				else{
-					a = 0x00 ;
-					set_PWM(0) ;
-				}
-				break ;
-		case dec:	
-				if(temp > 0x00) temp-- ;
-				if(a == 0x01) set_PWM(scale[temp]) ;
+		case toggle:
+				if (i < 3) set_PWM(scale[0]) ;
+				else if (i < 5) set_PWM(scale[4]) ;
+				else if (i < 7) set_PWM(scale[3]) ;
+				else if (i < 9) set_PWM(scale[2]) ;
+				else if (i < 12) set_PWM(0) ;
+				else if (i < 16) set_PWM(scale[1]) ;
+				else if (i < 20) set_PWM(scale[5]) ;
+				else if (i < 22) set_PWM(scale[4]) ;
+				else if (i < 24) set_PWM(0) ;
+				else if (i < 30) set_PWM(scale[6]) ;
+				else if (i < 39) set_PWM(scale[3]) ;
+				else if (i < 42) set_PWM(scale[2]) ;
+				else if (i < 48) set_PWM(scale[7]) ;
+				++i ;
 				break ;
 		case release:
+				set_PWM(0) ;
+				i = 0 ;
 				break ;	
                 default:        
 				break ;
